@@ -1,0 +1,71 @@
+---
+
+- hosts: openwrt
+  gather_facts: false
+  tasks:
+    - name: determine oem firmware version
+      shell: "/usr/bin/mca-cli-op info | grep Version | cut -d: -f2 | xargs"
+      register: ubnt_version
+
+    - name: split version string
+      set_fact:
+        version_major: "{{ ubnt_version.stdout.split('.')[0] }}"
+        version_minor: "{{ ubnt_version.stdout.split('.')[1] }}"
+
+    - name: download oem firmware
+      get_url:
+        url: "https://dl.ubnt.com/unifi/firmware/U7PG2/3.7.58.6385/BZ.qca956x.v3.7.58.6385.170508.0957.bin"
+        dest: "files/fwupdate.bin"
+        mode: "0644"
+      delegate_to: localhost
+      run_once: true
+
+    - name: download our own firmware
+      get_url:
+        url: "http://firmware.ffh.zone/stable/sysupgrade/gluon-ffh-vH21-ubiquiti-unifi-ac-mesh-sysupgrade.bin"
+        dest: "files/sysupgrade.bin"
+        mode: "0644"
+      delegate_to: localhost
+      run_once: true
+
+    - name: downgrade oem firmware to 3.7
+      when: ( version_major|int > 3 ) or ( version_major|int == 3 and version_minor|int > 7 )
+      block:
+        - name: copy firmware to device
+          copy:
+            src: "fwupdate.bin"
+            dest: "/tmp/fwupdate.bin"
+            mode: "0644"
+
+        - name: start sysupgrade
+          nohup:
+            command: "/usr/bin/syswrapper.sh upgrade2"
+
+        - name: wait for reboot
+          wait_for_connection:
+            timeout: 300
+            delay: 60
+
+    - name: copy our own firmware to device
+      copy:
+        src: "sysupgrade.bin"
+        dest: "/tmp/sysupgrade.bin"
+        mode: "0644"
+
+    - name: mtd write to kernel0
+      shell: "/usr/bin/mtd write /tmp/sysupgrade.bin kernel0"
+
+    - name: mtd erase kernel1
+      shell: "/usr/bin/mtd erase kernel1"
+
+    - name: check mtd4 for bs
+      shell: "/usr/bin/grep mtd4 /proc/mtd"
+      register: proc_mtd4
+
+    - name: purge mtd4
+      shell: "/usr/bin/dd if=/dev/zero bs=1 count=1 of=/dev/mtd4"
+      when: "'bs' in proc_mtd4.stdout"
+
+    - name: final reboot
+      nohup:
+        command: "/usr/bin/reboot"

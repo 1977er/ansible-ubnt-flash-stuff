@@ -1,0 +1,7 @@
+---
+
+openwrt:
+  hosts:
+    192.168.1.[115:122]
+
+# Add your host ip addresses to the openwrt group above. You can use ranges like [1:254].
