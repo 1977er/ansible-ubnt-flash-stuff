@@ -2,6 +2,11 @@
 
 - hosts: openwrt
   gather_facts: false
+
+  vars:
+    ansible_user: ubnt
+    ansible_ssh_pass: ubnt
+
   tasks:
     - name: determine oem firmware version
       shell: "/usr/bin/mca-cli-op info | grep Version | cut -d: -f2 | xargs"
@@ -11,22 +16,6 @@
       set_fact:
         version_major: "{{ ubnt_version.stdout.split('.')[0] }}"
         version_minor: "{{ ubnt_version.stdout.split('.')[1] }}"
-
-    - name: download oem firmware
-      get_url:
-        url: "https://dl.ubnt.com/unifi/firmware/U7PG2/3.7.58.6385/BZ.qca956x.v3.7.58.6385.170508.0957.bin"
-        dest: "files/fwupdate.bin"
-        mode: "0644"
-      delegate_to: localhost
-      run_once: true
-
-    - name: download our own firmware
-      get_url:
-        url: "http://firmware.ffh.zone/stable/sysupgrade/gluon-ffh-vH21-ubiquiti-unifi-ac-mesh-sysupgrade.bin"
-        dest: "files/sysupgrade.bin"
-        mode: "0644"
-      delegate_to: localhost
-      run_once: true
 
     - name: downgrade oem firmware to 3.7
       when: ( version_major|int > 3 ) or ( version_major|int == 3 and version_minor|int > 7 )
@@ -48,7 +37,7 @@
 
     - name: copy our own firmware to device
       copy:
-        src: "sysupgrade.bin"
+        src: "gluon-ffh-vH21-ubiquiti-unifi-ac-mesh-sysupgrade.bin"
         dest: "/tmp/sysupgrade.bin"
         mode: "0644"
 

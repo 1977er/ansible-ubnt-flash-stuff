@@ -1,4 +1,0 @@
----
-
-ansible_user: ubnt
-ansible_ssh_pass: ubnt

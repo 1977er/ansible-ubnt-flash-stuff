@@ -1,0 +1,66 @@
+---
+
+- hosts: openwrt
+  gather_facts: false
+
+  vars:
+    ansible_user: root
+
+  tasks:
+    - name: copy our own firmware to device
+      copy:
+        src: "gluon-ffh-vH21-ubnt-erx-sysupgrade-.bin"
+        dest: "/tmp/sysupgrade.bin"
+        mode: "0644"
+
+    - name: sysupgrade
+      nohup:
+        command: "sysupgrade -F /tmp/sysupgrade.bin"
+
+    - name: wait for reboot
+      wait_for_connection:
+        timeout: 300
+        delay: 30
+
+    - name: add ssh authorized_keys
+      copy:
+        src: "authorized_keys.ffh"
+        dest: "/etc/dropbear/authorized_keys"
+        mode: "0644"
+
+    - name: configure email contact address
+      uci:
+        command: "set"
+        key: "gluon-node-info.@owner[0].contact"
+        value: "WLAN@UF-Hannover.de"
+
+    - name: configure hostname
+      uci:
+        command: "set"
+        key: "system.@system[0].hostname"
+        value: "UFU-FWH-Strasse-Standort"
+
+    - name: configure mesh vpn
+      uci:
+        command: "set"
+        key: "gluon.mesh_vpn.enabled"
+        value: "1"
+
+    - name: update mesh vpn config
+      command: "/lib/gluon/mesh-vpn/update-config"
+
+    - name: configure domain for special_port
+      uci:
+        command: "set"
+        key: "gluon.core.domain"
+        value: "special_port"
+
+    - name: update domain configuration
+      command: "usr/sbin/gluon-reconfigure"
+
+    - name: uci commit
+      uci:
+        command: "commit"
+
+    - name: reboot
+      command: "reboot"

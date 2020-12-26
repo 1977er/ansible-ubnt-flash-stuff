@@ -1,0 +1,36 @@
+---
+
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    openwrt_url: "https://github.com/stman/OpenWRT-19.07.2-factory-tar-file-for-Ubiquiti-EdgeRouter-x/raw/master/openwrt-ramips-mt7621-ubnt-erx-initramfs-factory.tar"
+    firmware_ac_mesh_url: "http://firmware.ffh.zone/stable/sysupgrade/gluon-ffh-vH21-ubiquiti-unifi-ac-mesh-sysupgrade.bin"
+    firmware_erx_oem_url: "https://dl.ubnt.com/unifi/firmware/U7PG2/3.7.58.6385/BZ.qca956x.v3.7.58.6385.170508.0957.bin"
+    firmware_erx_url: "https://firmware.ffh.zone/vH21/sysupgrade/gluon-ffh-vH21-ubnt-erx-sysupgrade-.bin"
+
+  tasks:
+    - name: download ER-X oem firmware
+      get_url:
+        url: "{{ firmware_erx_oem_url }}"
+        dest: "files/fwupdate.bin"
+        mode: "0644"
+
+    - name: download AP AC Mesh firmware
+      get_url:
+        url: "{{ firmware_ac_mesh_url }}"
+        dest: "files/gluon-ffh-vH21-ubiquiti-unifi-ac-mesh-sysupgrade.bin"
+        mode: "0644"
+
+    - name: download OpenWRT ER-X initramfs
+      get_url:
+        url: "{{ openwrt_url }}"
+        dest: "files/openwrt-ramips-mt7621-ubnt-erx-initramfs-factory.tar"
+        mode: "0644"
+
+    - name: download ER-X firmware
+      get_url:
+        url: "{{ firmware_erx_url }}"
+        dest: "files/gluon-ffh-vH21-ubnt-erx-sysupgrade-.bin"
+        mode: "0644"

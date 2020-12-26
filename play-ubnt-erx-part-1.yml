@@ -1,0 +1,26 @@
+---
+
+- hosts: erx
+  gather_facts: true
+
+  vars:
+    ansible_user: ubnt
+    ansible_ssh_pass: ubnt
+
+  tasks:
+    - name: install OpenWRT initramfs
+      when: ansible_hostname == "ubnt"
+      block:
+        - name: copy firmware to device
+          copy:
+            src: "openwrt-ramips-mt7621-ubnt-erx-initramfs-factory.tar"
+            dest: "/tmp/initramfs.tar"
+            mode: "0644"
+
+        - name: start sysupgrade
+          shell: "/usr/bin/ubnt-upgrade --upgrade-noprompt /tmp/initramfs.tar"
+          become: yes
+
+        - name: reboot
+          shell: "reboot"
+          become: yes
